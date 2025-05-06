@@ -4,31 +4,26 @@ import pandas as pd
 from matplotlib.patches import Patch
 
 
-def plot_gantt_chart(df: pd.DataFrame) -> plt.Figure:
+
+def plot_gantt_chart(gantt: list) -> plt.Figure:
     """
-    Generate a Gantt chart from the scheduling result DataFrame.
-
-    Args:
-        df (pd.DataFrame): DataFrame with PID, Start Time, and Completion Time.
-
-    Returns:
-        plt.Figure: Matplotlib figure with Gantt chart.
+    Generate a Gantt chart from the list of execution tuples (pid, start, end).
     """
-    fig, ax = plt.subplots(figsize=(10, 2 + len(df) * 0.5))
+    fig, ax = plt.subplots(figsize=(10, 2 + len(set(p for p, _, _ in gantt)) * 0.5))
 
-    colors = sns.color_palette("tab10", len(df))
-    pid_to_color = {pid: colors[i % len(colors)] for i, pid in enumerate(df["PID"])}
+    unique_pids = list(dict.fromkeys(p for p, _, _ in gantt))
+    colors = sns.color_palette("tab10", len(unique_pids))
+    pid_to_color = {pid: colors[i % len(colors)] for i, pid in enumerate(unique_pids)}
 
-    for i, row in df.iterrows():
-        ax.barh(row["PID"], row["Completion Time"] - row["Start Time"], left=row["Start Time"], color=pid_to_color[row["PID"]])
-        ax.text(row["Start Time"] + 0.1, i, f"{row['Start Time']} → {row['Completion Time']}", va='center', ha='left', fontsize=8)
+    for pid, start, end in gantt:
+        ax.barh(pid, end - start, left=start, color=pid_to_color[pid])
+        ax.text(start + 0.1, pid, f"{start}→{end}", va='center', ha='left', fontsize=8)
 
     ax.set_xlabel("Time")
     ax.set_ylabel("Process")
     ax.set_title("Gantt Chart")
     ax.grid(True)
     return fig
-
 
 def plot_metric_bars(df: pd.DataFrame) -> plt.Figure:
     """

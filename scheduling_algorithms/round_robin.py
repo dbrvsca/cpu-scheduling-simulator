@@ -1,16 +1,11 @@
 import pandas as pd
 from collections import deque
 
-def round_robin_scheduling(df: pd.DataFrame, quantum: int) -> pd.DataFrame:
+def round_robin_scheduling(df: pd.DataFrame, quantum: int) -> tuple[pd.DataFrame, list]:
     """
-    Round Robin scheduling algorithm with a given time quantum.
+    Round Robin scheduling algorithm with time quantum.
 
-    Args:
-        df (pd.DataFrame): DataFrame containing process info.
-        quantum (int): Time slice for each process.
-
-    Returns:
-        pd.DataFrame: Updated DataFrame with scheduling metrics.
+    Returns both the metrics DataFrame and the Gantt chart data.
     """
     df = df.copy()
     df.sort_values(by="Arrival Time", inplace=True)
@@ -20,13 +15,11 @@ def round_robin_scheduling(df: pd.DataFrame, quantum: int) -> pd.DataFrame:
     remaining_time = df["Burst Time"].tolist()
     arrival_time = df["Arrival Time"].tolist()
     pid_list = df["PID"].tolist()
-    priority_list = df["Priority"].tolist()
 
     complete = 0
     current_time = 0
     queue = deque()
     visited = [False] * n
-    start_times = {}
     gantt = []
 
     while complete < n:
@@ -40,9 +33,6 @@ def round_robin_scheduling(df: pd.DataFrame, quantum: int) -> pd.DataFrame:
             continue
 
         idx = queue.popleft()
-
-        if pid_list[idx] not in start_times:
-            start_times[pid_list[idx]] = current_time
 
         exec_time = min(quantum, remaining_time[idx])
         gantt.append((pid_list[idx], current_time, current_time + exec_time))
@@ -62,11 +52,16 @@ def round_robin_scheduling(df: pd.DataFrame, quantum: int) -> pd.DataFrame:
 
     metrics = []
     for pid in pid_list:
-        all_executions = [(s, e) for p, s, e in gantt if p == pid]
+        all_executions = [(s, e) for (p, s, e) in gantt if p == pid]
+        if all_executions:
+            start = all_executions[0][0]
+            complete_time = all_executions[-1][1]
+        else:
+            start = 0
+            complete_time = 0
+
         arrival = df.loc[df["PID"] == pid, "Arrival Time"].values[0]
         burst = df.loc[df["PID"] == pid, "Burst Time"].values[0]
-        start = all_executions[0][1]
-        complete_time = all_executions[-1][2]
         waiting = complete_time - arrival - burst
         turnaround = complete_time - arrival
 
@@ -81,4 +76,4 @@ def round_robin_scheduling(df: pd.DataFrame, quantum: int) -> pd.DataFrame:
             "Turnaround Time": turnaround
         })
 
-    return pd.DataFrame(metrics)
+    return pd.DataFrame(metrics), gantt
