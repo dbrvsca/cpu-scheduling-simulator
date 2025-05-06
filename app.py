@@ -25,9 +25,22 @@ quantum = None
 if algorithm == "Round Robin":
     quantum = st.sidebar.slider("Quantum (Time Slice)", 1, 10, 3)
 
-# Generate data
-process_df = generate_random_processes(num_processes, seed=random_seed)
-st.subheader("Generated Process Table")
+# Toggle: Manual input
+manual_input = st.sidebar.checkbox("Enter processes manually")
+
+if manual_input:
+    st.subheader("Enter Process Details")
+    default_data = pd.DataFrame({
+        "PID": [f"P{i+1}" for i in range(num_processes)],
+        "Arrival Time": [0] * num_processes,
+        "Burst Time": [1] * num_processes,
+        "Priority": [1] * num_processes,
+    })
+    process_df = st.data_editor(default_data, num_rows="dynamic", use_container_width=True, key="manual_input")
+else:
+    process_df = generate_random_processes(num_processes, seed=random_seed)
+
+st.subheader("Process Table")
 st.dataframe(process_df)
 
 # Initialize result_df and gantt
